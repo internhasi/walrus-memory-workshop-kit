@@ -65,6 +65,12 @@ export default function Home() {
     });
   }
 
+  function handleClearRecall() {
+    setResults(null);
+    setQuery("");
+    setError(null);
+  }
+
   return (
     <main className="container">
       <header>
@@ -86,9 +92,19 @@ export default function Home() {
           }}
           placeholder="e.g. what did i think about sapiens?"
         />
-        <button onClick={handleSearch} disabled={!query || searching}>
-          {searching ? "searching…" : "recall"}
-        </button>
+        <div className="button-row">
+          <button onClick={handleSearch} disabled={!query || searching}>
+            {searching ? "searching…" : "recall"}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={handleClearRecall}
+            disabled={searching || (!results && !query)}
+          >
+            clear
+          </button>
+        </div>
 
         {results && results.length > 0 && (
           <ul className="results">
