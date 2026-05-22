@@ -1,13 +1,13 @@
-# MemWal Workshop Kit — Reading Tracker
+# Walrus Memory Workshop Kit — Reading Tracker
 
-A minimal Next.js app that exercises the core MemWal surface:
+A minimal Next.js app that exercises the core Walrus Memory surface:
 
 - `analyze()` — extract atomic facts from a paragraph and store each one as a memory
 - `remember()` — store the raw text exactly as typed
 - `recall()` — semantic search over your stored memories
 
 Single screen. No database, no auth. Memory persists across sessions, models, and
-devices via your MemWal account.
+devices via your Walrus Memory account.
 
 ## Branches
 
@@ -19,29 +19,29 @@ devices via your MemWal account.
 
 Each extension branch is a completed reference implementation. Workshop
 participants start from `main` and build their chosen extension themselves
-with Claude Code + the MemWal SDK skill file.
+with Claude Code + the Walrus Memory SDK skill file.
 
-## What MemWal is
+## What Walrus Memory is
 
-MemWal is a privacy-first AI memory layer for Sui + Walrus.
+Walrus Memory is a privacy-first AI memory layer for Sui + Walrus.
 See https://docs.memwal.ai and the SDK at https://www.npmjs.com/package/@mysten-incubation/memwal.
 
 ## Using Claude Code in this repo
 
 Two files at the repo root are written for AI assistants:
 
-- **`SKILL.md`** — a self-contained MemWal SDK reference (installation, API surface,
+- **`SKILL.md`** — a self-contained Walrus Memory SDK reference (installation, API surface,
   troubleshooting). Snapshot of https://github.com/MystenLabs/MemWal/blob/main/SKILL.md.
 - **`CLAUDE.md`** — project conventions and guardrails for Claude Code.
 
 Both are picked up automatically by Claude Code. If you're using a different AI
-tool, paste `SKILL.md` into context before asking it to write MemWal code.
+tool, paste `SKILL.md` into context before asking it to write Walrus Memory code.
 
 ## Prerequisites
 
 - Node.js 18+ (22 recommended — matches the rest of the monorepo)
 - pnpm
-- A MemWal account + a delegate key
+- A Walrus Memory account + a delegate key
 
 ## Setup
 
@@ -86,7 +86,7 @@ tool, paste `SKILL.md` into context before asking it to write MemWal code.
 
 | Surface | File |
 |---|---|
-| MemWal client (cached per process) | `lib/memwal.ts` |
+| Walrus Memory client (cached per process) | `lib/memwal.ts` |
 | Server actions (`analyzeEntry`, `rememberEntry`, `searchReadingHistory`) | `app/actions.ts` |
 | UI (one client component) | `app/page.tsx` |
 | Env sanity-check script | `verify.ts` |
@@ -99,4 +99,4 @@ tool, paste `SKILL.md` into context before asking it to write MemWal code.
   durable. This avoids the ~3s indexer-lag window where a freshly-stored memory
   isn't yet recallable.
 - The delegate key lives in `.env.local` and stays server-side. Server actions
-  call MemWal; the browser only sees plaintext results.
+  call Walrus Memory; the browser only sees plaintext results.
