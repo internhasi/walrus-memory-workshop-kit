@@ -40,31 +40,37 @@ If in doubt, log it.
 
 ## SDK & docs gaps
 
-<!-- Anywhere SKILL.md / CLAUDE.md / the Walrus Memory docs left a hole -->
-
-<!-- Template (delete me when you add your first real entry):
-**Where it hit:** [the moment / file / command]
-**What was missing:** [what wasn't documented?]
-**What you did instead:** [where did the answer come from?]
-**Workshop impact:** [block / confuse / minor]
--->
+- **Where it hit:** Running `pnpm setup` and `pnpm install` on a Windows environment.
+- **What was missing:** `SKILL.md` and `CLAUDE.md` do not mention cross-platform CLI script restrictions for `approve-builds` on Windows.
+- **What you did instead:** Troubleshooted shell execution policies and manually overrode pnpm build configs with the AI.
+- **Workshop impact:** Confuse / Block for Windows users.
 
 ## SDK & UX surprises
 
-<!-- Behaviors that were correct but surprising — recall behavior, response shapes, naming, etc. -->
+- **Where it hit:** Getting a `401 Unauthorized` error right after running `pnpm dev`.
+- **What was missing:** The SDK error was too generic. It didn't specify that the Public Key was accidentally pasted instead of the Private Key in `.env.local`.
+- **What you did instead:** Re-verified dashboard keys and used the correct hex private key with the AI's help.
+- **Workshop impact:** Confuse.
 
 ## Dashboard & onboarding
 
-<!-- Anything from staging.memwal.ai sign-in through the first successful remember/recall -->
+- **Where it hit:** Copying credentials into `.env.local` using standard Windows Notepad.
+- **What was missing:** No warning that basic text editors might introduce hidden carriage returns (`\r`), causing the `.env` parser to fail silently.
+- **What you did instead:** Sanitized the environment file lines.
+- **Workshop impact:** Minor annoyance.
 
 ## AI assistant friction
 
-<!-- Places where your AI got stuck, confused, or made the wrong call -->
+- **Where it hit:** Parsing environment variables in Next.js backend.
+- **What was missing:** The AI got initially confused by the hidden Windows character formats (`\r\n`) inside the `.env.local` file when reading credentials.
+- **What you did instead:** Explicitly guided the AI to analyze the raw file structure and clean up the strings.
+- **Workshop impact:** Minor annoyance.
 
 ## What worked well
 
-<!-- One or two things that genuinely felt good. Positive signal is useful too. -->
+- The two-verb model (`remember` / `recall`) is incredibly intuitive and clean to understand!
+- Having `SKILL.md` and `CLAUDE.md` directly in the root is an amazing paradigm for prompting AI assistants.
 
 ## One thing I'd change
 
-<!-- If you could change one thing about Walrus Memory or this kit, what is it? -->
+- Provide a clearer Windows onboarding guide or script compatibility since most developers might face strict execution policies or notepad encoding bugs.
