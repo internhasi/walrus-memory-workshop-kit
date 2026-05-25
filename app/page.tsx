@@ -18,6 +18,9 @@ type LastSave =
     }
   | { verb: "remember"; text: string; blobId: string };
 
+// අපිට අවශ්‍ය කරන Namespace ලැයිස්තුව
+const NAMESPACES = ["general", "work", "personal", "crypto"];
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [entry, setEntry] = useState("");
@@ -27,13 +30,17 @@ export default function Home() {
   const [searching, startSearch] = useTransition();
   const [analyzing, startAnalyze] = useTransition();
   const [remembering, startRemember] = useTransition();
+  
+  // දැනට තෝරාගෙන ඇති Namespace එක (Default එක general)
+  const [activeNamespace, setActiveNamespace] = useState("general");
 
   const saving = analyzing || remembering;
 
   function handleSearch() {
     setError(null);
     startSearch(async () => {
-      const r = await searchReadingHistory(query);
+      // මෙතනදී අපි තෝරපු namespace එකත් එක්කමයි search කරන්නේ
+      const r = await searchReadingHistory(query, activeNamespace);
       if (!r.ok) {
         setError(r.error);
         setResults(null);
@@ -46,7 +53,8 @@ export default function Home() {
   function handleAnalyze() {
     setError(null);
     startAnalyze(async () => {
-      const r = await analyzeEntry(entry);
+      // මෙතනදී අපි තෝරපු namespace එක ඇතුළට සේව් කරන්න කියලා යවනවා
+      const r = await analyzeEntry(entry, activeNamespace);
       if (!r.ok) {
         setError(r.error);
         setLastSave(null);
@@ -65,7 +73,8 @@ export default function Home() {
   function handleRemember() {
     setError(null);
     startRemember(async () => {
-      const r = await rememberEntry(entry);
+      // මෙතනදීත් namespace එක පාස් කරනවා
+      const r = await rememberEntry(entry, activeNamespace);
       if (!r.ok) {
         setError(r.error);
         setLastSave(null);
@@ -91,8 +100,40 @@ export default function Home() {
         </p>
       </header>
 
+      {/* 🚀 මෙන්න අපි අලුතින්ම දාපු සුපිරි Multi-Namespace Switcher Tabs ටික */}
+      <section className="card" style={{ marginBottom: "1rem", padding: "1rem" }}>
+        <label style={{ fontSize: "0.9rem", color: "var(--muted)", marginBottom: "0.5rem", display: "block" }}>
+          Select Active Memory Namespace:
+        </label>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {NAMESPACES.map((ns) => (
+            <button
+              key={ns}
+              type="button"
+              onClick={() => {
+                setActiveNamespace(ns);
+                handleClearRecall(); // Namespace එක මාරු කරද්දී පරණ සර්ච් රිසල්ට්ස් ක්ලියර් කරනවා
+              }}
+              className={activeNamespace === ns ? "" : "secondary"}
+              style={{
+                padding: "0.4rem 1rem",
+                fontSize: "0.85rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                border: activeNamespace === ns ? "1px solid var(--brand)" : "1px solid #333"
+              }}
+            >
+              {ns}
+            </button>
+          ))}
+        </div>
+        <p className="hint" style={{ marginTop: "0.5rem", fontSize: "0.8rem" }}>
+          Current Active Scope: <strong style={{ color: "var(--brand)" }}>{activeNamespace}</strong>
+        </p>
+      </section>
+
       <section className="card">
-        <label htmlFor="q">recall()</label>
+        <label htmlFor="q">recall() from [{activeNamespace}]</label>
         <input
           id="q"
           type="text"
@@ -101,7 +142,7 @@ export default function Home() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && query && !searching) handleSearch();
           }}
-          placeholder="e.g. what did i think about sapiens?"
+          placeholder={`query memories inside ${activeNamespace}...`}
         />
         <div className="button-row">
           <button onClick={handleSearch} disabled={!query || searching}>
@@ -128,17 +169,17 @@ export default function Home() {
           </ul>
         )}
         {results && results.length === 0 && (
-          <p className="empty">no matching memories yet — log a reading session below.</p>
+          <p className="empty">no matching memories inside [{activeNamespace}] yet.</p>
         )}
       </section>
 
       <section className="card">
-        <label htmlFor="e">log a reading session</label>
+        <label htmlFor="e">log a reading session into [{activeNamespace}]</label>
         <textarea
           id="e"
           value={entry}
           onChange={(e) => setEntry(e.target.value)}
-          placeholder='e.g. "just finished sapiens — found the agricultural revolution chapter mind-bending, less convinced by the section on happiness."'
+          placeholder={`e.g. adding some notes specific to ${activeNamespace}...`}
           rows={5}
         />
         <div className="button-row">
@@ -153,17 +194,11 @@ export default function Home() {
             {remembering ? "saving…" : "remember() — save raw text"}
           </button>
         </div>
-        <p className="hint">
-          <strong>analyze()</strong> runs an LLM pass that extracts atomic facts and
-          canonicalizes phrasing (e.g. "i like X" → "user likes X").{" "}
-          <strong>remember()</strong> stores exactly what you typed.
-          Try both with the same input — recall the same query — see the difference.
-        </p>
 
         {lastSave?.verb === "analyze" && (
           <div className="facts">
             <h3>
-              analyze() → {lastSave.succeeded} saved
+              analyze() → {lastSave.succeeded} saved to [{activeNamespace}]
               {lastSave.failed > 0 ? `, ${lastSave.failed} failed` : ""}
             </h3>
             {lastSave.facts.length > 0 ? (
@@ -171,29 +206,18 @@ export default function Home() {
                 {lastSave.facts.map((f, i) => (
                   <li key={i} className={f.saved ? "saved" : "failed"}>
                     {f.saved ? "✓" : "✗"} {f.text}
-                    {!f.saved && f.error ? (
-                      <span className="fact-err"> — {f.error}</span>
-                    ) : null}
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="empty">no facts extracted — try a more concrete entry.</p>
             )}
-            {lastSave.failed > 0 && (
-              <p className="hint" style={{ color: "var(--bad)" }}>
-                Some facts didn&apos;t persist. The relayer accepted them but
-                the storage step (Walrus upload) failed or timed out. Recall
-                won&apos;t find these. Try again, or report to the Walrus Memory
-                team if it keeps happening.
-              </p>
-            )}
           </div>
         )}
 
         {lastSave?.verb === "remember" && (
           <div className="facts">
-            <h3>remember() → stored raw</h3>
+            <h3>remember() → stored raw in [{activeNamespace}]</h3>
             <ul>
               <li>✓ {lastSave.text}</li>
             </ul>

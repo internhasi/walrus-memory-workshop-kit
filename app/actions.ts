@@ -4,26 +4,12 @@ import { getMemWal } from "@/lib/memwal";
 
 /**
  * Maximum cosine distance for a recall hit to count as "relevant."
- *
- * `recall()` returns the top-K closest memories by cosine distance, but it does
- * NOT cut off at "no longer relevant." If you have 5 memories and ask about
- * something unrelated, you'll get all 5 back. We filter post-hoc.
- *
- * Rough guide for OpenAI text-embedding-3-small (what Walrus Memory uses today):
- *   < 0.3 → near-duplicate or paraphrase
- *   0.3 – 0.6 → same topic, related
- *   0.6 – 0.8 → vaguely related, mostly noise
- *   > 0.8 → unrelated, filler
- *
- * 0.7 is a forgiving default. Tighten for fewer false positives, loosen if
- * you're seeing too many empty recalls.
  */
 const MAX_RECALL_DISTANCE = 0.7;
 
 export type AnalyzedFactStatus = {
   text: string;
   saved: boolean;
-  /** When !saved, a short reason: "failed", "timeout", or the server error message. */
   error?: string;
 };
 
@@ -49,21 +35,15 @@ export type SearchResult =
   | { ok: false; error: string };
 
 /**
- * analyze() — feeds the entry to an LLM that extracts atomic facts and stores
- * each one as its own memory. Phrasing is canonicalized (e.g. "i like X" →
- * "user likes X"), which makes recall robust to paraphrasing.
+ * analyzeEntry - Extracts facts and stores them inside the selected namespace
  */
-export async function analyzeEntry(text: string): Promise<AnalyzeOutcome> {
+export async function analyzeEntry(text: string, namespace: string = "general"): Promise<AnalyzeOutcome> {
   if (!text.trim()) return { ok: false, error: "empty entry" };
   try {
     const memwal = getMemWal();
-    const result = await memwal.analyzeAndWait(text);
+    // Passing the namespace as an option to the Walrus Memory SDK
+    const result = await memwal.analyzeAndWait(text, { namespace });
 
-    // The SDK returns `facts[]` (everything the LLM extracted) plus
-    // `results[]` (per-job status: "done" / "failed" / "timeout"). Match them
-    // by id so the UI can show which facts actually persisted vs. which the
-    // relayer failed to store. Without this we'd claim success on every fact
-    // regardless of upload outcome — a silent data-loss bug.
     const facts: AnalyzedFactStatus[] = result.facts.map((f) => {
       const status = result.results.find((r) => r.id === f.id);
       const ok = status?.status === "done";
@@ -77,7 +57,7 @@ export async function analyzeEntry(text: string): Promise<AnalyzeOutcome> {
     });
 
     console.log(
-      `[analyze] "${text.slice(0, 60)}…" → extracted ${result.facts.length}, succeeded ${result.succeeded}, failed ${result.failed}`,
+      `[analyze] [Namespace: ${namespace}] "${text.slice(0, 60)}…" → extracted ${result.facts.length}`,
     );
 
     return {
@@ -97,15 +77,14 @@ export async function analyzeEntry(text: string): Promise<AnalyzeOutcome> {
 }
 
 /**
- * remember() — stores the entry exactly as typed, no fact extraction, no
- * canonicalization. Useful when the wording matters or you've already
- * pre-processed the text yourself.
+ * rememberEntry - Stores the raw text exactly as typed inside the selected namespace
  */
-export async function rememberEntry(text: string): Promise<RememberOutcome> {
+export async function rememberEntry(text: string, namespace: string = "general"): Promise<RememberOutcome> {
   if (!text.trim()) return { ok: false, error: "empty entry" };
   try {
     const memwal = getMemWal();
-    const result = await memwal.rememberAndWait(text);
+    // Passing the namespace as an option to the Walrus Memory SDK
+    const result = await memwal.rememberAndWait(text, { namespace });
     return {
       ok: true,
       verb: "remember",
@@ -120,11 +99,15 @@ export async function rememberEntry(text: string): Promise<RememberOutcome> {
   }
 }
 
-export async function searchReadingHistory(query: string): Promise<SearchResult> {
+/**
+ * searchReadingHistory - Recalls memories only from the selected namespace
+ */
+export async function searchReadingHistory(query: string, namespace: string = "general"): Promise<SearchResult> {
   if (!query.trim()) return { ok: false, error: "empty query" };
   try {
     const memwal = getMemWal();
-    const result = await memwal.recall(query, 10);
+    // Fetching memories filtered by the specific namespace
+    const result = await memwal.recall(query, 10, { namespace });
     return {
       ok: true,
       results: result.results
