@@ -71,6 +71,13 @@ If in doubt, log it.
 - The two-verb model (`remember` / `recall`) is incredibly intuitive and clean to understand!
 - Having `SKILL.md` and `CLAUDE.md` directly in the root is an amazing paradigm for prompting AI assistants.
 
+## Namespace handling (Extension A)
+
+- **Where it hit:** Implementing the Multi-namespace switcher.
+- **What was missing:** The SDK documentation doesn't explicitly clarify that `namespace` is not a valid parameter inside a config object for `analyzeAndWait`/`rememberAndWait`. Passing it as a map (`{ namespace: "..." }`) results in a `422 Server Error`.
+- **What you did instead:** Used a smart prefix strategy (e.g., `[Scope: ...]`) to isolate memories logically without violating SDK parameter requirements.
+- **Workshop impact:** Block (Server error until debugged).
+
 ## One thing I'd change
 
 - Provide a clearer Windows onboarding guide or script compatibility since most developers might face strict execution policies or notepad encoding bugs.
