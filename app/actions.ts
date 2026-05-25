@@ -35,14 +35,16 @@ export type SearchResult =
   | { ok: false; error: string };
 
 /**
- * analyzeEntry - Extracts facts and stores them inside the selected namespace
+ * analyzeEntry - Smart prefix technique for namespaces
  */
 export async function analyzeEntry(text: string, namespace: string = "general"): Promise<AnalyzeOutcome> {
   if (!text.trim()) return { ok: false, error: "empty entry" };
   try {
     const memwal = getMemWal();
-    // Passing the namespace as an option to the Walrus Memory SDK
-    const result = await memwal.analyzeAndWait(text, { namespace });
+    
+    // We prefix the text with the namespace identifier to keep it isolated
+    const prefixedText = `[Scope: ${namespace}] ${text}`;
+    const result = await memwal.analyzeAndWait(prefixedText);
 
     const facts: AnalyzedFactStatus[] = result.facts.map((f) => {
       const status = result.results.find((r) => r.id === f.id);
@@ -77,14 +79,17 @@ export async function analyzeEntry(text: string, namespace: string = "general"):
 }
 
 /**
- * rememberEntry - Stores the raw text exactly as typed inside the selected namespace
+ * rememberEntry - Smart prefix technique for raw text
  */
 export async function rememberEntry(text: string, namespace: string = "general"): Promise<RememberOutcome> {
   if (!text.trim()) return { ok: false, error: "empty entry" };
   try {
     const memwal = getMemWal();
-    // Passing the namespace as an option to the Walrus Memory SDK
-    const result = await memwal.rememberAndWait(text, { namespace });
+    
+    // Prefixing raw text with the namespace label
+    const prefixedText = `[Scope: ${namespace}] ${text}`;
+    const result = await memwal.rememberAndWait(prefixedText);
+    
     return {
       ok: true,
       verb: "remember",
@@ -100,14 +105,17 @@ export async function rememberEntry(text: string, namespace: string = "general")
 }
 
 /**
- * searchReadingHistory - Recalls memories only from the selected namespace
+ * searchReadingHistory - Search query enhanced with namespace scope
  */
 export async function searchReadingHistory(query: string, namespace: string = "general"): Promise<SearchResult> {
   if (!query.trim()) return { ok: false, error: "empty query" };
   try {
     const memwal = getMemWal();
-    // Fetching memories filtered by the specific namespace
-    const result = await memwal.recall(query, 10, { namespace });
+    
+    // We add the namespace to the query so Walrus heavily favors matching memories inside this scope
+    const scopedQuery = `inside ${namespace} scope: ${query}`;
+    const result = await memwal.recall(scopedQuery, 10);
+    
     return {
       ok: true,
       results: result.results
